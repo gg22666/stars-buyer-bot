@@ -1,0 +1,46 @@
+from aiogram import Bot, Dispatcher, F
+from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.filters import Command
+import asyncio
+from datetime import datetime
+
+TOKEN = "8565687936:AAFj5h4iAHR_1GE8WMlJ26hdyR2qzdqeqXI"
+
+bot = Bot(token="8565687936:AAFj5h4iAHR_1GE8WMlJ26hdyR2qzdqeqXI")
+dp = Dispatcher()
+
+@dp.message(Command("start"))
+async def start(message: Message):
+    kb = ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text="💰 Продать звезды")]],
+        resize_keyboard=True
+    )
+    await message.answer("Привет! Я бот по скупке Stars.\nНажми кнопку ниже.", reply_markup=kb)
+
+@dp.message(F.text == "💰 Продать звезды")
+async def sell(message: Message):
+    await message.answer("Напиши, сколько звёзд хочешь продать (минимум 50)")
+
+@dp.message(F.text.regexp(r"^\d+$"))
+async def amount(message: Message):
+    stars = int(message.text)
+    if stars < 50:
+        await message.answer("Минимум 50 звёзд. Напиши заново.")
+        return
+    with open("requests.txt", "a", encoding="utf-8") as f:
+        f.write(f"[{datetime.now()}] ID:{message.from_user.id} @{message.from_user.username} — {stars} звёзд\n")
+    await message.answer("Отлично! Теперь напиши реквизиты для выплаты (карта / USDT и т.д.)")
+
+@dp.message()
+async def payment(message: Message):
+    if message.text and not message.text.startswith("/"):
+        with open("requests.txt", "a", encoding="utf-8") as f:
+            f.write(f"Реквизиты: {message.text}\n\n")
+        await message.answer("✅ Заявка сохранена! Скоро свяжусь с тобой.")
+
+async def main():
+    print("✅ Бот запущен и работает!")
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
